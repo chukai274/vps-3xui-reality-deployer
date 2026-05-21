@@ -1,0 +1,14 @@
+build/
+dist/
+__pycache__/
+*.py[cod]
+ui_review*.png
+assets/ui_review_current.png
+deployment_records/
+*.log
+.pytest_cache/
+.mypy_cache/
+vps-*-deployment.md
+.tools/
+.tmp/
+_downloads/
