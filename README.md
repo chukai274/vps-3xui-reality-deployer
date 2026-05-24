@@ -82,7 +82,6 @@ pyinstaller VPS_Reality_Deployer.spec
 ## Release
 
 发布版本会附带 Windows 单文件程序 `VPS_Reality_Deployer.exe`。
-
 ## 作者
 
 CraigChu

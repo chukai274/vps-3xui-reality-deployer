@@ -276,13 +276,18 @@ class RemoteDeployer:
         )
 
     def install_script(self) -> str:
-        answers = f"y\n{self.config.panel_port}\n2\n\n80\n"
+        # 3x-ui install.sh now prompts for database selection before panel port.
+        # Keep the default SQLite choice with a leading blank line, then confirm
+        # custom panel port, choose IP certificate, leave IPv6 empty, and accept
+        # the default ACME listener port.
+        answers = f"\ny\n{self.config.panel_port}\n2\n\n80\n"
         answers_b64 = b64_text(answers)
         return textwrap.dedent(
             f"""
             set -e
             export DEBIAN_FRONTEND=noninteractive
             export NEEDRESTART_MODE=l
+            SERVER_IP={shlex.quote(self.config.ip)}
             TS="$(date +%Y%m%d_%H%M%S)"
             if [ -d /etc/x-ui ]; then
                 cp -a /etc/x-ui "/root/x-ui-backup-${{TS}}"
@@ -294,6 +299,23 @@ class RemoteDeployer:
             apt-get install -y curl ca-certificates socat ufw sqlite3 openssl jq
             curl -fsSL https://raw.githubusercontent.com/MHSanaei/3x-ui/master/install.sh -o /tmp/3x-ui-install.sh
             printf '%s' '{answers_b64}' | base64 -d | bash /tmp/3x-ui-install.sh
+            if [ ! -s /root/cert/ip/fullchain.pem ] || [ ! -s /root/cert/ip/privkey.pem ]; then
+                echo "官方 IP 证书未成功落盘，尝试从 acme.sh 缓存恢复或生成自签名证书"
+                mkdir -p /root/cert/ip
+                ACME_DIR="/root/.acme.sh/${{SERVER_IP}}_ecc"
+                if [ -s "$ACME_DIR/fullchain.cer" ] && [ -s "$ACME_DIR/${{SERVER_IP}}.key" ]; then
+                    cp "$ACME_DIR/fullchain.cer" /root/cert/ip/fullchain.pem
+                    cp "$ACME_DIR/${{SERVER_IP}}.key" /root/cert/ip/privkey.pem
+                    echo "已从 acme.sh 缓存恢复证书"
+                else
+                    openssl req -x509 -nodes -newkey rsa:2048 -days 825 \
+                        -subj "/CN=${{SERVER_IP}}" \
+                        -addext "subjectAltName = IP:${{SERVER_IP}}" \
+                        -keyout /root/cert/ip/privkey.pem \
+                        -out /root/cert/ip/fullchain.pem
+                    echo "已生成自签名 IP 证书"
+                fi
+            fi
             [ -s /root/cert/ip/fullchain.pem ] || {{ echo "证书文件缺失: /root/cert/ip/fullchain.pem"; exit 12; }}
             [ -s /root/cert/ip/privkey.pem ] || {{ echo "证书私钥缺失: /root/cert/ip/privkey.pem"; exit 13; }}
             """
@@ -334,14 +356,40 @@ class RemoteDeployer:
             ST_ESC=$(printf '%s' "$STREAM_SETTINGS" | sed "s/'/''/g")
             SN_ESC=$(printf '%s' "$SNIFFING" | sed "s/'/''/g")
 
+            table_has_column() {{
+                sqlite3 -noheader "$DB" "SELECT 1 FROM pragma_table_info('$1') WHERE name='$2' LIMIT 1;" | grep -q '^1$'
+            }}
+
+            INBOUND_COLUMNS="user_id, up, down, total, remark, enable, expiry_time, traffic_reset, last_traffic_reset_time, listen, port, protocol, settings, stream_settings, tag, sniffing"
+            INBOUND_VALUES="1, 0, 0, 0, '🇺🇸 美国', 1, 0, 'never', 0, '', $INBOUND_PORT, 'vless', '$IN_ESC', '$ST_ESC', 'inbound-443', '$SN_ESC'"
+            if table_has_column inbounds all_time; then
+                INBOUND_COLUMNS="user_id, up, down, total, all_time, remark, enable, expiry_time, traffic_reset, last_traffic_reset_time, listen, port, protocol, settings, stream_settings, tag, sniffing"
+                INBOUND_VALUES="1, 0, 0, 0, 0, '🇺🇸 美国', 1, 0, 'never', 0, '', $INBOUND_PORT, 'vless', '$IN_ESC', '$ST_ESC', 'inbound-443', '$SN_ESC'"
+            fi
+
+            CLIENT_EMAIL="client-$SUBID"
+            NOW_MS=$(date +%s%3N)
+
+            CLIENT_COLUMNS="inbound_id, enable, email, up, down, expiry_time, total, reset, last_online"
+            CLIENT_VALUES="(SELECT id FROM inbounds WHERE tag='inbound-443'), 1, '$CLIENT_EMAIL', 0, 0, 0, 536870912000, 0, 0"
+            if table_has_column client_traffics all_time; then
+                CLIENT_COLUMNS="inbound_id, enable, email, up, down, all_time, expiry_time, total, reset, last_online"
+                CLIENT_VALUES="(SELECT id FROM inbounds WHERE tag='inbound-443'), 1, '$CLIENT_EMAIL', 0, 0, 0, 0, 536870912000, 0, 0"
+            fi
+
             sqlite3 "$DB" <<SQL
             BEGIN;
             DELETE FROM client_traffics WHERE inbound_id IN (SELECT id FROM inbounds WHERE tag='inbound-443' OR port=$INBOUND_PORT);
+            DELETE FROM client_inbounds WHERE inbound_id IN (SELECT id FROM inbounds WHERE tag='inbound-443' OR port=$INBOUND_PORT);
             DELETE FROM inbounds WHERE tag='inbound-443' OR port=$INBOUND_PORT;
-            INSERT INTO inbounds (user_id, up, down, total, all_time, remark, enable, expiry_time, traffic_reset, last_traffic_reset_time, listen, port, protocol, settings, stream_settings, tag, sniffing)
-            VALUES (1, 0, 0, 0, 0, '🇺🇸 美国', 1, 0, 'never', 0, '', $INBOUND_PORT, 'vless', '$IN_ESC', '$ST_ESC', 'inbound-443', '$SN_ESC');
-            INSERT OR REPLACE INTO client_traffics (inbound_id, enable, email, up, down, all_time, expiry_time, total, reset, last_online)
-            VALUES ((SELECT id FROM inbounds WHERE tag='inbound-443'), 1, '', 0, 0, 0, 0, 536870912000, 0, 0);
+            INSERT INTO inbounds ($INBOUND_COLUMNS)
+            VALUES ($INBOUND_VALUES);
+            INSERT OR REPLACE INTO clients (email, sub_id, uuid, password, auth, flow, security, reverse, limit_ip, total_gb, expiry_time, enable, tg_id, comment, reset, created_at, updated_at)
+            VALUES ('$CLIENT_EMAIL', '$SUBID', '$UUID', '', '', 'xtls-rprx-vision', '', '', 0, 0, 0, 1, 0, '🇺🇸 美国', 0, $NOW_MS, $NOW_MS);
+            INSERT OR REPLACE INTO client_inbounds (client_id, inbound_id, flow_override, created_at)
+            VALUES ((SELECT id FROM clients WHERE email='$CLIENT_EMAIL'), (SELECT id FROM inbounds WHERE tag='inbound-443'), 'xtls-rprx-vision', $NOW_MS);
+            INSERT OR REPLACE INTO client_traffics ($CLIENT_COLUMNS)
+            VALUES ($CLIENT_VALUES);
             DELETE FROM settings WHERE key IN ('subEnable','subPort','subPath','subCertFile','subKeyFile','subEncrypt','subShowInfo','subUpdates','subClashEnable','subClashPath','remarkModel');
             INSERT OR REPLACE INTO settings (key, value) VALUES ('subEnable','true');
             INSERT OR REPLACE INTO settings (key, value) VALUES ('subPort','$SUB_PORT');
