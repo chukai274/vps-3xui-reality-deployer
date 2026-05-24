@@ -1,78 +1,78 @@
 # VPS 3x-ui Reality Deployer
 
-涓€娆?Windows 鏈湴 PyQt6 宸ュ叿锛岀敤浜庡湪**宸叉巿鏉?*鐨?VPS 涓婅嚜鍔ㄩ儴缃?3x-ui锛岄厤缃?`VLESS + TCP + REALITY + xtls-rprx-vision`锛屽紑鍚?`BBR / UFW`锛屽苟鐢熸垚 Clash Verge / Shadowrocket 璁㈤槄閾炬帴涓?Markdown 璁板綍銆?
+一款 Windows 本地 PyQt6 工具，用于在**已授权**的 VPS 上自动部署 3x-ui，配置 `VLESS + TCP + REALITY + xtls-rprx-vision`，开启 `BBR / UFW`，并生成 Clash Verge / Shadowrocket 订阅链接与 Markdown 记录。
 
-> 浠呬緵瀛︿範鍙傝€冦€備粎闄愪綘鏈汉鎷ユ湁鎴栬鏄庣‘鎺堟潈绠＄悊鐨?VPS銆傝閬靛畧鎵€鍦ㄥ湴娉曞緥娉曡銆佷簯鏈嶅姟鍟嗘潯娆句笌缃戠粶浣跨敤瑙勮寖锛屼笉寰楃敤浜庤繚娉曡繚瑙勭敤閫斻€?
+> 仅供学习参考。仅限你本人拥有或被明确授权管理的 VPS。请遵守所在地法律法规、云服务商条款与网络使用规范，不得用于违法违规用途。
 
-## 涓昏鍔熻兘
+## 主要功能
 
-- 鍚庡彴绾跨▼閮ㄧ讲锛岀晫闈笉浼氬崱姝?
-- SSH 涓€閿繛鎺ュ崟鍙?VPS
-- 鑷姩瀹夎鎴栬鐩栭儴缃?3x-ui
-- 鑷姩鐢熸垚鑺傜偣銆佽闃呭拰閮ㄧ讲璁板綍
-- 鍚敤 `BBR + fq`
-- 閰嶇疆 `UFW`
-- 鍙€夊啓鍏?SSH 瀵嗙爜銆佷慨鏀?root 瀵嗙爜銆侀檺鍒堕潰鏉挎潵婧?IP
+- 后台线程部署，界面不会卡死
+- SSH 一键连接单台 VPS
+- 自动安装或覆盖部署 3x-ui
+- 自动生成节点、订阅和部署记录
+- 启用 `BBR + fq`
+- 配置 `UFW`
+- 可选写入 SSH 密码、修改 root 密码、限制面板来源 IP
 
-## 鐣岄潰棰勮
+## 界面预览
 
-![閮ㄧ讲鐣岄潰](assets/ui_review_2026-05-24.png)
+![部署界面](assets/ui_review_2026-05-24.png)
 
-## 蹇€熶笂鎵?
+## 快速上手
 
-1. 鍦?`VPS IP` 濉洰鏍囨満鍏綉 IPv4銆?
-2. `SSH 鐢ㄦ埛` 榛樿鏄?`root`锛岃緭鍏ュ疄渚嬪瘑鐮併€?
-3. 绔彛涓€鑸繚鎸侀粯璁わ細`32105 / 2096 / 443`銆?
-4. 鍕鹃€夋巿鏉冪‘璁ゃ€?
-5. 鐐瑰嚮 `寮€濮嬮儴缃瞏锛岀瓑寰呮棩蹇楀畬鎴愩€?
-6. 閮ㄧ讲缁撴潫鍚庡鍒堕潰鏉垮湴鍧€鍜岃闃呴摼鎺ワ紝璁板綍鏂囦欢浼氳嚜鍔ㄧ敓鎴愩€?
+1. 在 `VPS IP` 填目标机公网 IPv4。
+2. `SSH 用户` 默认是 `root`，输入实例密码。
+3. 端口一般保持默认：`32105 / 2096 / 443`。
+4. 勾选授权确认。
+5. 点击 `开始部署`，等待日志完成。
+6. 部署结束后复制面板地址和订阅链接，记录文件会自动生成。
 
-### 瀛楁璇存槑
+### 字段说明
 
-| 瀛楁 | 璇存槑 |
+| 字段 | 说明 |
 | --- | --- |
-| `VPS IP` | 鐩爣 VPS 鐨勫叕缃?IPv4 |
-| `SSH 鐢ㄦ埛` | 榛樿 `root` |
-| `SSH 瀵嗙爜` | 瀹炰緥鎺у埗鍙扮粰鍑虹殑瀵嗙爜 |
-| `闈㈡澘绔彛` | 3x-ui 绠＄悊闈㈡澘 HTTPS 绔彛 |
-| `璁㈤槄绔彛` | Clash / Shadowrocket 璁㈤槄绔彛 |
-| `鑺傜偣绔彛` | VLESS Reality 鍏ョ珯绔彛锛岄粯璁?`443` |
+| `VPS IP` | 目标 VPS 的公网 IPv4 |
+| `SSH 用户` | 默认 `root` |
+| `SSH 密码` | 实例控制台给出的密码 |
+| `面板端口` | 3x-ui 管理面板 HTTPS 端口 |
+| `订阅端口` | Clash / Shadowrocket 订阅端口 |
+| `节点端口` | VLESS Reality 入站端口，默认 `443` |
 
-## 杈撳嚭鍐呭
+## 输出内容
 
-- 3x-ui 闈㈡澘鍦板潃銆佽处鍙峰拰瀵嗙爜
-- Clash Verge 璁㈤槄閾炬帴
-- Shadowrocket 璁㈤槄閾炬帴
-- Markdown 閮ㄧ讲璁板綍锛歚deployment_records/vps-<ip>-deployment.md`
+- 3x-ui 面板地址、账号和密码
+- Clash Verge 订阅链接
+- Shadowrocket 订阅链接
+- Markdown 部署记录：`deployment_records/vps-<ip>-deployment.md`
 
-## 鎶€鏈鏄?
+## 技术说明
 
-- 鍗忚锛歚VLESS + TCP + REALITY + xtls-rprx-vision`
-- 鑺傜偣鍙傛暟锛歚UUID`銆乣Reality key`銆乣ShortId`銆乣SubId` 姣忔閲嶆柊鐢熸垚
-- 璇佷功锛欼P 璇佷功
-- 绯荤粺浼樺寲锛歚BBR + fq`
-- 闃茬伀澧欙細UFW 鏀捐 `22 / 80 / 443 / 2096 / 32105`
+- 协议：`VLESS + TCP + REALITY + xtls-rprx-vision`
+- 节点参数：`UUID`、`Reality key`、`ShortId`、`SubId` 每次重新生成
+- 证书：IP 证书
+- 系统优化：`BBR + fq`
+- 防火墙：UFW 放行 `22 / 80 / 443 / 2096 / 32105`
 
-## 鏁欑▼
+## 教程
 
-1. 濉啓 VPS 鐨?IP 鍜?SSH 瀵嗙爜銆?
-2. 纭绔彛閰嶇疆鏃犺锛岄€氬父鐩存帴淇濇寔榛樿鍊笺€?
-3. 鍕鹃€夆€滄垜纭姝?VPS...鈥濈殑鎺堟潈椤广€?
-4. 鐐瑰嚮 `寮€濮嬮儴缃瞏銆?
-5. 绛夊緟瀹炴椂鎺у埗鍙拌緭鍑哄畬鎴愰儴缃层€侀獙璇佸拰璁板綍鍐欏叆銆?
-6. 澶嶅埗缁撴灉鍖洪噷鐨勯潰鏉裤€丆lash Verge 鍜?Shadowrocket 閾炬帴銆?
+1. 填写 VPS 的 IP 和 SSH 密码。
+2. 确认端口配置无误，通常直接保持默认值。
+3. 勾选“我确认此 VPS...”的授权项。
+4. 点击 `开始部署`。
+5. 等待实时控制台输出完成部署、验证和记录写入。
+6. 复制结果区里的面板、Clash Verge 和 Shadowrocket 链接。
 
-## 閫夊瀷鍙傝€?
+## 选型参考
 
-濡傛灉浣犲湪鎵惧悎閫傜殑 VPS锛屽彲浠ュ弬鑰冭繖涓帹骞垮叆鍙ｏ細
+如果你在找合适的 VPS，可以参考这个推广入口：
 
-[NovixLink 鎺ㄨ崘鍏ュ彛](https://novixlink.com/aff.php?aff=84)
+[NovixLink 推荐入口](https://novixlink.com/aff.php?aff=84)
 
-璇存槑锛氳繖鏄甫鎺ㄥ箍鍙傛暟鐨勯摼鎺ワ紝鐢ㄤ簬鏀寔椤圭洰缁存姢銆?
+说明：这是带推广参数的链接，用于支持项目维护。
 
-鏍规嵁瀹樼綉褰撳墠淇℃伅锛孨ovixLink 涓绘墦缇庡浗 ISP 浣忓畢 IP VPS銆丅GP 鍥介檯绾胯矾 VPS 鍜?IDC 鏈烘埧 VPS锛岄〉闈㈠己璋?`Tier-1` 缃戠粶銆佸師鐢熶綇瀹?IP銆乣NVMe` 瀛樺偍銆乣KVM` 铏氭嫙鍖栧拰澶氭。浣嶅椁愩€傛洿閫傚悎闇€瑕佹捣澶栫綉缁滆繛閫氭€с€佺ǔ瀹氬叕缃戠幆澧冩垨缇庡浗浣忓畢 IP 鍦烘櫙鐨勭敤鎴枫€傚叿浣撳椁愪笌浠锋牸浠ュ畼缃戝疄鏃堕〉闈负鍑嗐€?
+根据官网当前信息，NovixLink 主打美国 ISP 住宅 IP VPS、BGP 国际线路 VPS 和 IDC 机房 VPS，页面强调 `Tier-1` 网络、原生住宅 IP、`NVMe` 存储、`KVM` 虚拟化和多档位套餐。更适合需要海外网络连通性、稳定公网环境或美国住宅 IP 场景的用户。具体套餐与价格以官网实时页面为准。
 
-## 鏋勫缓
+## 构建
 
 ```bash
 pip install -r requirements.txt
@@ -81,8 +81,8 @@ pyinstaller VPS_Reality_Deployer.spec
 
 ## Release
 
-鍙戝竷鐗堟湰浼氶檮甯?Windows 鍗曟枃浠剁▼搴?`VPS_Reality_Deployer.exe`銆?
+发布版本会附带 Windows 单文件程序 `VPS_Reality_Deployer.exe`。
 
-## 浣滆€?
+## 作者
 
 CraigChu
